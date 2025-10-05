@@ -2,26 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>JIMPT-66 Mission Briefing</title>
+  <title>Typewriter + YouTube with Ambience Fade</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body {
       margin: 0;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       background: #0f172a;
       color: #e6eef8;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
       padding: 2rem;
+      cursor: pointer;
     }
+
+    .container {
+      width: 700px;
+      max-width: 90vw;
+      text-align: left;
+    }
+
     #output {
       font-size: 1.25rem;
-      max-width: 80ch;
-      white-space: pre-wrap; /* preserves newlines and spacing */
+      white-space: pre-wrap;
       word-wrap: break-word;
     }
+
     #output::after {
       content: '|';
       display: inline-block;
@@ -29,24 +38,80 @@
       animation: blink 1s steps(2, end) infinite;
       vertical-align: bottom;
     }
+
     @keyframes blink { 50% { opacity: 0 } }
+
+    #video {
+      opacity: 0;
+      pointer-events: none;
+      margin-top: 2rem;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: opacity 1s ease;
+    }
+
+    #video.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    iframe {
+      width: 560px;
+      height: 315px;
+      border: none;
+    }
+
+    @media (max-width: 600px) {
+      iframe {
+        width: 100%;
+        height: calc(100vw * 9 / 16);
+      }
+    }
+
+    .hint {
+      color: #94a3b8;
+      font-size: 2rem;
+      margin-top: 1rem;
+      text-align: center;
+      opacity: 1;
+      transition: opacity 1s ease;
+    }
+
+    .hint.hidden { opacity: 0; }
   </style>
 </head>
 <body>
-  <div id="output" aria-live="polite"></div>
+  <div class="container">
+    <div id="output" aria-live="polite"></div>
+    <div id="video">
+      <iframe id="player" 
+        src="https://www.youtube.com/embed/C3iHAgwIYtI?enablejsapi=1&autoplay=1&mute=0" 
+        title="YouTube video player" 
+        allow="autoplay; encrypted-media" 
+        allowfullscreen>
+      </iframe>
+    </div>
+    <div class="hint" id="hint">(Turn volume up - click/tap anywhere to begin)</div>
+    <audio id="ambience" src="./space.mp3" loop></audio>
+  </div>
 
   <script>
-    // Multiline message using real newlines:
     const message = `[JIMPT-66: Birthday Edition] ⚙️
 
 Processing data packet...
-Subject: Mission: Birthday – Commander Dad, Version 6.6
+Subject: Incoming mission data...
+
+Mission: Birthday No. 66
+Mission crew: 
+- Mission Commander: Dad
+- Mission Specialist: Mum
+
 
 🎉 Happy 66th birthday, Dad! 🎉
 
 Congratulations on another successful orbit around the sun! You’re now officially JIMPT-66, a high-performance model featuring improved wisdom capacity, enhanced humour protocols, and continued compatibility with SpaceX launches and electric-car missions.
 
-Mission Control reports an upcoming expedition: one full week in October, with you and Mum journeying down to Christchurch for exploration, relaxation, and field testing of local cafes. Please ensure your navigation system remains calibrated and your curiosity sensors fully active.
+Mission Control reports an upcoming one week expedition to be manned by yourself and Mission Specialist Mum journeying down to Christchurch for exploration, relaxation, and field testing of local cafes. Please ensure your navigation system remains calibrated and your curiosity sensors fully active.
 
 Please don’t forget to activate your new wrist-mounted mission device — designed for advanced tracking, optimal health telemetry, and maybe even a few secret features waiting to be discovered. 🕹️⌚
 
@@ -64,21 +129,94 @@ End of transmission.
 – ChatGPT (with guidance from Sam) ❤️`;
 
     const OUT = document.getElementById('output');
-    const SPEED = 40; // ms per character
+    const VIDEO = document.getElementById('video');
+    const HINT = document.getElementById('hint');
+    const AMBIENCE = document.getElementById('ambience');
+    const SPEED = 35;
     let i = 0;
+    let started = false;
+    let player;
+
+    // Load YouTube API
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        events: { 'onReady': (event) => {} }
+      });
+    }
 
     function typeChar() {
-      if (i >= message.length) return; // finished
-      const ch = message[i++];
-      if (ch === '\n') {
-        OUT.appendChild(document.createElement('br'));
-      } else {
-        OUT.append(ch);
+      if (i >= message.length) {
+        VIDEO.classList.add('visible'); // fade in video
+        VIDEO.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
       }
+      OUT.append(message[i++]);
+
+      OUT.scrollIntoView({behavior: 'smooth', block: 'end'});
+
       setTimeout(typeChar, SPEED);
     }
 
-    window.addEventListener('load', typeChar);
+    window.addEventListener('click', () => {
+      if (started) return;
+      started = true;
+
+      // Start typing
+      typeChar();
+
+      // Fade out hint
+      HINT.classList.add('hidden');
+
+      // Start ambience audio
+      AMBIENCE.volume = 1; // ensure full volume
+      AMBIENCE.play();
+
+      // Delay video start by 20 seconds
+      setTimeout(() => {
+        if (player && player.playVideo){
+          player.playVideo();
+          player.setVolume(10);
+        } 
+        
+        // Fade out ambience over 3 seconds
+        const fadeDuration = 20000; // ms
+        const fadeStep = 50; // ms
+        const fadeAmount = AMBIENCE.volume / (fadeDuration / fadeStep);
+        const fadeInterval = setInterval(() => {
+          if (AMBIENCE.volume - fadeAmount > 0) {
+            AMBIENCE.volume -= fadeAmount;
+          } else {
+            AMBIENCE.volume = 0;
+            AMBIENCE.pause();
+            clearInterval(fadeInterval);
+          }
+        }, fadeStep);
+
+         // Fade in video volume over 5 seconds (10 → 100)
+        const videoFadeDuration = 30000;
+        const videoFadeStep = 50;
+        const steps = videoFadeDuration / videoFadeStep;
+        const volumeStep = (100 - 10) / steps;
+        let currentVolume = 10;
+        const videoFadeInterval = setInterval(() => {
+          currentVolume += volumeStep;          
+          if (currentVolume >= 100) {
+            player.setVolume(100);
+            clearInterval(videoFadeInterval);
+          } else {
+            console.log(`setting volume to ${currentVolume}`);
+            player.setVolume(Math.round(currentVolume));
+          }
+        }, videoFadeStep);
+
+      }, 22000);
+
+      document.body.style.cursor = "default";
+    }, { once: true });
   </script>
 </body>
 </html>
