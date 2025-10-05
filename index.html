@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <title>Typewriter + YouTube with Ambience Fade</title>
@@ -40,7 +41,11 @@
       vertical-align: bottom;
     }
 
-    @keyframes blink { 50% { opacity: 0 } }
+    @keyframes blink {
+      50% {
+        opacity: 0
+      }
+    }
 
     #video {
       opacity: 0;
@@ -78,18 +83,18 @@
       transition: opacity 1s ease;
     }
 
-    .hint.hidden { opacity: 0; }
+    .hint.hidden {
+      opacity: 0;
+    }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div id="output" aria-live="polite"></div>
     <div id="video">
-      <iframe id="player" 
-        src="https://www.youtube.com/embed/C3iHAgwIYtI?enablejsapi=1&autoplay=1&mute=0" 
-        title="YouTube video player" 
-        allow="autoplay; encrypted-media" 
-        allowfullscreen>
+      <iframe id="player" src="https://www.youtube.com/embed/C3iHAgwIYtI?enablejsapi=1&autoplay=1&mute=0"
+        title="YouTube video player" allow="autoplay; encrypted-media" allowfullscreen>
       </iframe>
     </div>
     <div class="hint" id="hint">(Turn volume up - click/tap anywhere to begin)</div>
@@ -151,7 +156,12 @@ End of transmission
 
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('player', {
-        events: { 'onReady': (event) => {} }
+        events: {
+          'onReady': (event) => {
+            player.pauseVideo();
+            player.seekTo(0, true);
+          }
+        }
       });
     }
 
@@ -163,7 +173,7 @@ End of transmission
       }
       OUT.append(message[i++]);
 
-      OUT.scrollIntoView({behavior: 'smooth', block: 'end'});
+      OUT.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
       setTimeout(typeChar, SPEED);
     }
@@ -184,11 +194,11 @@ End of transmission
 
       // Delay video start by 20 seconds
       setTimeout(() => {
-        if (player && player.playVideo){
+        if (player && player.playVideo) {
           player.playVideo();
           player.setVolume(10);
-        } 
-        
+        }
+
         // Fade out ambience over 3 seconds
         const fadeDuration = 20000; // ms
         const fadeStep = 50; // ms
@@ -203,14 +213,14 @@ End of transmission
           }
         }, fadeStep);
 
-         // Fade in video volume over 5 seconds (10 → 100)
+        // Fade in video volume over 5 seconds (10 → 100)
         const videoFadeDuration = 30000;
         const videoFadeStep = 50;
         const steps = videoFadeDuration / videoFadeStep;
         const volumeStep = (100 - 10) / steps;
         let currentVolume = 10;
         const videoFadeInterval = setInterval(() => {
-          currentVolume += volumeStep;          
+          currentVolume += volumeStep;
           if (currentVolume >= 100) {
             player.setVolume(100);
             clearInterval(videoFadeInterval);
@@ -226,4 +236,5 @@ End of transmission
     }, { once: true });
   </script>
 </body>
+
 </html>
